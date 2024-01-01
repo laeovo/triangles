@@ -1,14 +1,14 @@
 import ScreenSaver
 import SwiftUI
 
-let stepDuration: UInt8 = 50
-let spawnRelax = 3
-let spawnAtOnce = 8
+let stepDuration: UInt8 = 20
+let spawnRelax = 1
+let spawnAtOnce = 3
 
 let screenSize: CGRect = NSScreen.main!.frame
 let screenWidth: UInt16 = UInt16(screenSize.width)
 let screenHeight: UInt16 = UInt16(screenSize.height)
-let triangleSideLength: CGFloat = 100
+let triangleSideLength: CGFloat = 250
 let triangleSparcity: UInt16 = 1
 
 let boxFillActivated: Bool = true
@@ -102,18 +102,20 @@ class triangle {
     init() {
         self.currentCell = CGPoint(x: 0, y: 0)
         self.targetCell = self.currentCell
-        self.currentPosition = CGPoint(x: 0, y: 0)
+        self.position = CGPoint(x: 0, y: 0)
         self.age = 0
         self.state = "inactive"
     }
     
     private var state: String
+    private var orientation: UInt8 = 0
     private var progress: UInt8 = 0
     private var currentCell: CGPoint
     private var targetCell: CGPoint
-    private var currentPosition: CGPoint
-    private var currentRotation: Double = 0
-    private var currentRotationPhase: Double = 0
+    private var position: CGPoint
+    private var rotation: Double = 0
+    private var flippingDirection: Double = 1
+    private var flippingPhase: Double = 0
     private var color: NSColor = NSColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0)
     private var age: UInt8
     private var history: [CGPoint] = []
@@ -121,36 +123,97 @@ class triangle {
     public func activate(cell: CGPoint, newColor: NSColor) {
         self.currentCell = cell
         self.targetCell = cell
-        self.updatePosition()
-        initGrow()
         self.color = newColor
         self.history.append(cell)
+        self.updatePosition()
+        initGrow()
     }
     
     private func updatePosition() {
-        if getCellType(cell: self.currentCell) == "down" {
-            self.currentPosition = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x+2, y: self.currentCell.y+1)))
-            self.currentRotation = Double.pi
+        switch self.orientation {
+        case 0:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: self.currentCell))
+        case 1:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x+1, y: self.currentCell.y)))
+        case 2:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x+2, y: self.currentCell.y)))
+        case 3:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x+2, y: self.currentCell.y+1)))
+        case 4:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x+1, y: self.currentCell.y+1)))
+        case 5:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x, y: self.currentCell.y+1)))
+        default:
+            self.position = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: self.currentCell))
         }
-        else {
-            self.currentPosition = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: self.currentCell))
-        }
-        self.currentRotation += self.currentRotationPhase
+        self.rotation = -Double(self.orientation)*60/180*Double.pi
+        self.rotation += self.flippingDirection * self.flippingPhase
     }
     
-//    public func initNextMove(nextCell: CGPoint) {
-//        self.state = "move"
-//        self.targetCell = nextCell
-//        pivotPoint = computePivotPoints(cellA: currentCell, cellB: targetCell).randomElement()!
-//        // TODO: anchor triangle at pivot point
-//
-//        self.history.append(self.targetCell)
-//        if self.history.count > 2 {
-//            self.history.remove(at: 0)
-//        }
-//
-//        progress = 0
-//    }
+    public func initNextMove(nextCell: CGPoint, clockwise: Bool) {
+        self.state = "move"
+        self.targetCell = nextCell
+        if getCellType(cell: self.currentCell) == "up" {
+            if self.targetCell.x > self.currentCell.x {
+                if clockwise {
+                    self.orientation = 2
+                }
+                else {
+                    self.orientation = 4
+                }
+            }
+            else if self.targetCell.x < self.currentCell.x {
+                if clockwise {
+                    self.orientation = 4
+                }
+                else {
+                    self.orientation = 0
+                }
+            }
+            else if self.targetCell.y < self.currentCell.y {
+                if clockwise {
+                    self.orientation = 0
+                }
+                else {
+                    self.orientation = 2
+                }
+            }
+        }
+        else {
+            if self.targetCell.x > self.currentCell.x {
+                if clockwise {
+                    self.orientation = 1
+                }
+                else {
+                    self.orientation = 3
+                }
+            }
+            else if self.targetCell.x < self.currentCell.x {
+                if clockwise {
+                    self.orientation = 5
+                }
+                else {
+                    self.orientation = 1
+                }
+            }
+            else if self.targetCell.y > self.currentCell.y {
+                if clockwise {
+                    self.orientation = 3
+                }
+                else {
+                    self.orientation = 1
+                }
+            }
+        }
+        self.flippingDirection = clockwise ? 1 : -1
+
+        self.history.append(self.targetCell)
+        if self.history.count > 2 {
+            self.history.remove(at: 0)
+        }
+
+        progress = 0
+    }
     
     public func initGrow() {
         self.state = "grow"
@@ -183,7 +246,7 @@ class triangle {
 //            let movedPhase = 0.5 - 0.5 * cbrt(cos(Double.pi * phase)) // accelerated cosine
             let movedPhase = -2*pow(phase, 3) + 3*pow(phase, 2) // cubic
 //            let movedPhase = phase <= 0.5 ? 2*phase*phase : -phase*phase*2 + 4*phase-1 // pseudo-quadratic
-            self.currentRotationPhase = 60 * Double.pi / 180 * movedPhase
+            self.flippingPhase = 60 * Double.pi / 180 * movedPhase
 
             if self.progress == stepDuration {
                 self.currentCell = self.targetCell
@@ -218,8 +281,8 @@ class triangle {
     
     public func draw() {
         let path : NSBezierPath = NSBezierPath()
-        let anchorRotated: CGPoint = self.currentPosition
-        let points: [NSPoint] = getTriangleVertices(anchorRotated: anchorRotated, angle: rotationActive ? currentWorldRotation+self.currentRotation : self.currentRotation)
+        let anchorRotated: CGPoint = self.position
+        let points: [NSPoint] = getTriangleVertices(anchorRotated: anchorRotated, angle: rotationActive ? currentWorldRotation+self.rotation : self.rotation)
         path.move(to: points[0])
         for point in points {
             path.line(to: NSPoint(x: point.x, y: point.y))
@@ -305,37 +368,37 @@ class trianglesView: ScreenSaverView {
                     activeTriangle.initShrink()
                 }
                 else {
-//                    let currentCell = activeTriangle.getCurrentCell()
-//
-//                    if getCellType(cell: currentCell) == "up" {
-//                        if currentRotationDegrees >= 330 || currentRotationDegrees < 30 {
-//                            // drop triangle to (x, y+1)
-//                            activeTriangle.initNextMove(nextCell: CGPoint(x: currentCell.x, y: currentCell.y+1))
-//                            continue
-//                        }
-//                        if currentRotationDegrees >= 30 && currentRotationDegrees < 90 {
-//                            // choose between (x, y+1) and (x+1, y)
-//                            // var nextPotentialCells: [CGPoint] = []
-//                            continue
-//                        }
-//                        if currentRotationDegrees >= 90 && currentRotationDegrees < 150 {
-//                            // drop triangle to (x+1, y)
-//                            continue
-//                        }
-//                        if currentRotationDegrees >= 150 && currentRotationDegrees < 210 {
-//                            // choose between (x+1, y) and (x-1, y)
-//                            continue
-//                        }
-//                        if currentRotationDegrees >= 210 && currentRotationDegrees < 270 {
-//                            // drop triangle to (x-1, y)
-//                            continue
-//                        }
-//                        if currentRotationDegrees >= 270 && currentRotationDegrees < 330 {
-//                            // chosse between (x-1, y) and (x, y+1)
-//                            continue
-//                        }
-//
-//                    }
+                    let currentCell = activeTriangle.getCurrentCell()
+
+                    if getCellType(cell: currentCell) == "up" {
+                        if currentWorldRotationDegrees >= 330 || currentWorldRotationDegrees < 30 {
+                            // drop triangle to (x, y-1)
+                            activeTriangle.initNextMove(nextCell: CGPoint(x: currentCell.x, y: currentCell.y+1), clockwise: Bool.random())
+                            continue
+                        }
+                        if currentWorldRotationDegrees >= 30 && currentWorldRotationDegrees < 90 {
+                            // choose between (x, y-1) and (x+1, y)
+                            // var nextPotentialCells: [CGPoint] = []
+                            continue
+                        }
+                        if currentWorldRotationDegrees >= 90 && currentWorldRotationDegrees < 150 {
+                            // drop triangle to (x+1, y)
+                            continue
+                        }
+                        if currentWorldRotationDegrees >= 150 && currentWorldRotationDegrees < 210 {
+                            // choose between (x+1, y) and (x-1, y)
+                            continue
+                        }
+                        if currentWorldRotationDegrees >= 210 && currentWorldRotationDegrees < 270 {
+                            // drop triangle to (x-1, y)
+                            continue
+                        }
+                        if currentWorldRotationDegrees >= 270 && currentWorldRotationDegrees < 330 {
+                            // chosse between (x-1, y) and (x, y-1)
+                            continue
+                        }
+
+                    }
 
                     activeTriangle.initShrink()
                 }
@@ -370,7 +433,7 @@ class trianglesView: ScreenSaverView {
         var cellCandidate: CGPoint
         var tries = 0
         repeat {
-            cellCandidate = CGPoint(x: Int.random(in: -10..<10), y: Int.random(in: -5..<5))
+            cellCandidate = CGPoint(x: Int.random(in: -13..<13), y: Int.random(in: -7..<7))
             tries += 1
         }
         while !cellIsEmpty(cell: cellCandidate) && tries < triangles.count
