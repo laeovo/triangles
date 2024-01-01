@@ -18,10 +18,11 @@ let cornerRadius: CGFloat = triangleSideLength * cornerRadiusProportion
 let edgeWidthProportion: CGFloat = 0.12
 let edgeWidth: CGFloat = triangleSideLength * edgeWidthProportion
 
-//var currentWorldRotation: Double = Double.random(in: 0...2*Double.pi)
-var currentWorldRotation: Double = 0
+let rotationActive: Bool = true
+var currentWorldRotation: Double = Double.random(in: 0...2*Double.pi)
 var currentWorldRotationDegrees: Double = currentWorldRotation / Double.pi * 180
-let worldRotationSpeed: Double = 0.0
+let worldRotationSpeed: Double = 0.001
+let worldRotationCenter: CGPoint = CGPoint(x: Int(screenWidth/2), y: Int(screenHeight/2))
 
 let nrHues: Double = 1
 var currentHue: Double = Double.random(in: 0...1)
@@ -46,8 +47,17 @@ func getWorldCoordinate(cellCoordinate: CGPoint) -> CGPoint {
 }
 
 func getRotatedCoordinate(worldCoordinate: CGPoint) -> CGPoint {
-    // TODO: implement
-    return worldCoordinate
+    if rotationActive {
+        let worldCoordinateInReferenceToRotationCenter: CGPoint = CGPoint(x: worldCoordinate.x-worldRotationCenter.x, y: worldCoordinate.y-worldRotationCenter.y)
+        let sin: Double = sin(currentWorldRotation)
+        let cos: Double = cos(currentWorldRotation)
+        let x: CGFloat = worldCoordinateInReferenceToRotationCenter.x*cos + worldCoordinateInReferenceToRotationCenter.y*sin
+        let y: CGFloat = -worldCoordinateInReferenceToRotationCenter.x*sin + worldCoordinateInReferenceToRotationCenter.y*cos
+        return CGPoint(x: x+worldRotationCenter.x, y: y+worldRotationCenter.y)
+    }
+    else {
+        return worldCoordinate
+    }
 }
 
 func getCellType(cell: CGPoint) -> String {
@@ -112,6 +122,13 @@ class triangle {
     public func activate(cell: CGPoint, newColor: NSColor) {
         self.currentCell = cell
         self.targetCell = cell
+        self.updatePosition()
+        initGrow()
+        color = newColor
+        history.append(cell)
+    }
+    
+    private func updatePosition() {
         if getCellType(cell: self.currentCell) == "down" {
             self.currentPosition = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: CGPoint(x: self.currentCell.x+2, y: self.currentCell.y+1)))
             self.currentRotation = Double.pi
@@ -119,9 +136,6 @@ class triangle {
         else {
             self.currentPosition = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: self.currentCell))
         }
-        initGrow()
-        color = newColor
-        history.append(cell)
     }
     
 //    public func initNextMove(nextCell: CGPoint) {
@@ -141,15 +155,18 @@ class triangle {
     public func initGrow() {
         state = "grow"
         self.progress = 0
+        self.updatePosition()
     }
 
     public func initShrink() {
         state = "shrink"
         self.progress = 0
+        self.updatePosition()
     }
 
     public func makeProgress() {
         progress += 1
+        self.updatePosition()
 
         if state == "grow" {
             grow()
@@ -202,7 +219,7 @@ class triangle {
     public func draw() {
         let path : NSBezierPath = NSBezierPath()
         let anchorRotated: CGPoint = self.currentPosition
-        let points: [NSPoint] = getTriangleVertices(anchorRotated: anchorRotated, angle: currentWorldRotation+self.currentRotation)
+        let points: [NSPoint] = getTriangleVertices(anchorRotated: anchorRotated, angle: rotationActive ? currentWorldRotation+self.currentRotation : self.currentRotation)
         path.move(to: points[0])
         for point in points {
             path.line(to: NSPoint(x: point.x, y: point.y))
@@ -272,7 +289,7 @@ class trianglesView: ScreenSaverView {
     override func animateOneFrame() {
         super.animateOneFrame()
         
-        if triangles.count < 200 && Int(initTimer)%Int(spawnRelax) == 0 {
+        if triangles.count < 150 && Int(initTimer)%Int(spawnRelax) == 0 {
             for _ in 1...spawnAtOnce {
                 createNewTriangle()
             }
