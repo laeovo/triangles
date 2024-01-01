@@ -100,12 +100,11 @@ struct triangleShape: Shape {
 
 class triangle {
     init() {
-        currentCell = CGPoint(x: 0, y: 0)
-        targetCell = currentCell
-        currentPosition = CGPoint(x: 0, y: 0)
-        pivotPoint = currentCell
-        age = 0
-        state = "inactive"
+        self.currentCell = CGPoint(x: 0, y: 0)
+        self.targetCell = self.currentCell
+        self.currentPosition = CGPoint(x: 0, y: 0)
+        self.age = 0
+        self.state = "inactive"
     }
     
     private var state: String
@@ -114,18 +113,18 @@ class triangle {
     private var targetCell: CGPoint
     private var currentPosition: CGPoint
     private var currentRotation: Double = 0
+    private var currentRotationPhase: Double = 0
     private var color: NSColor = NSColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0)
     private var age: UInt8
     private var history: [CGPoint] = []
-    private var pivotPoint: CGPoint
     
     public func activate(cell: CGPoint, newColor: NSColor) {
         self.currentCell = cell
         self.targetCell = cell
         self.updatePosition()
         initGrow()
-        color = newColor
-        history.append(cell)
+        self.color = newColor
+        self.history.append(cell)
     }
     
     private func updatePosition() {
@@ -136,84 +135,85 @@ class triangle {
         else {
             self.currentPosition = getRotatedCoordinate(worldCoordinate: getWorldCoordinate(cellCoordinate: self.currentCell))
         }
+        self.currentRotation += self.currentRotationPhase
     }
     
 //    public func initNextMove(nextCell: CGPoint) {
-//        state = "move"
-//        targetCell = nextCell
+//        self.state = "move"
+//        self.targetCell = nextCell
 //        pivotPoint = computePivotPoints(cellA: currentCell, cellB: targetCell).randomElement()!
 //        // TODO: anchor triangle at pivot point
 //
-//        history.append(targetCell)
-//        if history.count > 2 {
-//            history.remove(at: 0)
+//        self.history.append(self.targetCell)
+//        if self.history.count > 2 {
+//            self.history.remove(at: 0)
 //        }
 //
 //        progress = 0
 //    }
     
     public func initGrow() {
-        state = "grow"
+        self.state = "grow"
         self.progress = 0
         self.updatePosition()
     }
 
     public func initShrink() {
-        state = "shrink"
+        self.state = "shrink"
         self.progress = 0
         self.updatePosition()
     }
 
     public func makeProgress() {
-        progress += 1
+        self.progress += 1
         self.updatePosition()
 
-        if state == "grow" {
-            grow()
-            if progress == stepDuration {
-                state = "idle"
-                age = 0
+        if self.state == "grow" {
+            self.grow()
+            if self.progress == stepDuration {
+                self.state = "idle"
+                self.age = 0
             }
         }
-//        else if state == "move" {
-//            let phase = Double(progress) / Double(stepDuration)
-//            // movedPhase: [0, 1] --> [0, 1]
-////            let movedPhase = phase // linear
-////            let movedPhase = 0.5 - 0.5 * cos(Double.pi * phase) // cosine-ish
-////            let movedPhase = 0.5 - 0.5 * cbrt(cos(Double.pi * phase)) // accelerated cosine
-//            let movedPhase = -2*pow(phase, 3) + 3*pow(phase, 2) // cubic
-////            let movedPhase = phase <= 0.5 ? 2*phase*phase : -phase*phase*2 + 4*phase-1 // pseudo-quadratic
-//            currentRotation = 60 * Double.pi / 180 * movedPhase
-//
-//            if progress == stepDuration {
-//                currentCell = targetCell
-//                state = "idle"
-//                age += 1
-//            }
-//        }
-        else if state == "shrink" {
-            shrink()
-            if (progress == stepDuration) {
-                state = "inactive"
-                age += 1
+        else if self.state == "move" {
+            let phase = Double(self.progress) / Double(stepDuration)
+            // movedPhase: [0, 1] --> [0, 1]
+//            let movedPhase = phase // linear
+//            let movedPhase = 0.5 - 0.5 * cos(Double.pi * phase) // cosine-ish
+//            let movedPhase = 0.5 - 0.5 * cbrt(cos(Double.pi * phase)) // accelerated cosine
+            let movedPhase = -2*pow(phase, 3) + 3*pow(phase, 2) // cubic
+//            let movedPhase = phase <= 0.5 ? 2*phase*phase : -phase*phase*2 + 4*phase-1 // pseudo-quadratic
+            self.currentRotationPhase = 60 * Double.pi / 180 * movedPhase
+
+            if self.progress == stepDuration {
+                self.currentCell = self.targetCell
+                self.state = "idle"
+                self.age += 1
+            }
+        }
+        else if self.state == "shrink" {
+            self.shrink()
+            if (self.progress == stepDuration) {
+                self.state = "inactive"
+                self.age += 1
             }
         }
     }
 
     public func getState() -> String {
-        return state
+        return self.state
     }
 
     public func getAge() -> UInt8 {
-        return age
+        return self.age
     }
 
     private func grow() {
-        color = NSColor(red: color.redComponent, green: color.greenComponent, blue: color.blueComponent, alpha: CGFloat(Float(progress) / Float(stepDuration)))
+        self.color = NSColor(red: self.color.redComponent, green: self.color.greenComponent, blue: self.color.blueComponent, alpha: CGFloat(Float(self.progress) / Float(stepDuration)))
     }
 
     private func shrink() {
-        color = NSColor(red: color.redComponent, green: color.greenComponent, blue: color.blueComponent, alpha: 1.0 - CGFloat(Float(progress) / Float(stepDuration)))
+        self.color = NSColor(red: self.color.redComponent, green: self.color.greenComponent, blue: self.color.blueComponent, alpha: 1.0 - CGFloat(Float(self.progress) / Float(stepDuration)))
     }
     
     public func draw() {
@@ -229,11 +229,11 @@ class triangle {
     }
     
     public func getOccupiedCells() -> [CGPoint] {
-        return history
+        return self.history
     }
 
     public func getCurrentCell() -> CGPoint {
-        return currentCell
+        return self.currentCell
     }
 //
 //    private func computePivotPoints(cellA: CGPoint, cellB: CGPoint) -> [CGPoint] {
