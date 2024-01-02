@@ -361,6 +361,7 @@ class trianglesView: ScreenSaverView {
     // MARK: - Lifecycle
     override func draw(_ rect: NSRect) {
         drawBackground(.black)
+        drawGravityVector()
         for activeTriangle in triangles {
             activeTriangle.draw()
         }
@@ -543,5 +544,13 @@ class trianglesView: ScreenSaverView {
             }
         }
         return completelyFreeCells
+    }
+    
+    private func drawGravityVector() {
+        let path : NSBezierPath = NSBezierPath()
+        path.move(to: CGPoint(x:100, y:100))
+        path.line(to: CGPoint(x: 100+50*sin(currentWorldRotation), y: 100+50*cos(currentWorldRotation)))
+        NSColor.white.set()
+        path.stroke()
     }
 }
