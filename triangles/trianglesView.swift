@@ -1,15 +1,14 @@
 import ScreenSaver
 import SwiftUI
 
-let stepDuration: UInt8 = 13
+let stepDuration: UInt8 = 120
 let spawnRelax = 1
-let spawnAtOnce = 3
+let spawnAtOnce = 50
 
 let screenSize: CGRect = NSScreen.main!.frame
 let screenWidth: UInt16 = UInt16(screenSize.width)
 let screenHeight: UInt16 = UInt16(screenSize.height)
 let triangleSideLength: CGFloat = 100
-let triangleSparcity: UInt16 = 1
 
 let boxFillActivated: Bool = true
 let fillColor = NSColor(red: 0, green: 0, blue: 0, alpha: 0.5)
@@ -176,7 +175,7 @@ struct flip {
                     self.occupiedCells = [CGPoint(x: self.currentCell.x-1, y: self.currentCell.y), CGPoint(x: self.currentCell.x-1, y: self.currentCell.y+1)]
                 }
                 else {
-                    self.requiredOrientation = 1
+                    self.requiredOrientation = 5
                     self.occupiedCells = [CGPoint(x: self.currentCell.x+1, y: self.currentCell.y), CGPoint(x: self.currentCell.x+1, y: self.currentCell.y+1)]
                 }
             }
@@ -347,6 +346,8 @@ class trianglesView: ScreenSaverView {
     
     private var initTimer: UInt64 = 0
     private var triangles: [triangle] = []
+    
+    private var nrTriesPerCycle = 0
 
     // MARK: - Initialization
     override init?(frame: NSRect, isPreview: Bool) {
@@ -361,7 +362,8 @@ class trianglesView: ScreenSaverView {
     // MARK: - Lifecycle
     override func draw(_ rect: NSRect) {
         drawBackground(.black)
-        drawGravityVector()
+        //drawGravityVector()
+        drawTries()
         for activeTriangle in triangles {
             activeTriangle.draw()
         }
@@ -369,8 +371,9 @@ class trianglesView: ScreenSaverView {
 
     override func animateOneFrame() {
         super.animateOneFrame()
+        self.nrTriesPerCycle = 0
         
-        if triangles.count < 500 && Int(initTimer)%Int(spawnRelax) == 0 {
+        if triangles.count < 1000 && Int(initTimer)%Int(spawnRelax) == 0 {
             for _ in 1...spawnAtOnce {
                 createNewTriangle()
             }
@@ -489,9 +492,12 @@ class trianglesView: ScreenSaverView {
         let newTriangle = triangle()
         var cellCandidate: CGPoint
         var tries = 0
+        let maxX: Int = 20
+        let maxY: Int = 12
         repeat {
-            cellCandidate = CGPoint(x: Int.random(in: -20..<20), y: Int.random(in: -12..<12))
+            cellCandidate = CGPoint(x: Int.random(in: -maxX..<maxX), y: Int.random(in: -maxY..<maxY))
             tries += 1
+            self.nrTriesPerCycle += 1
         }
         while !cellIsBlocked(cell: cellCandidate) && tries < triangles.count
         if cellIsCompletelyFree(cell: cellCandidate) {
@@ -551,6 +557,14 @@ class trianglesView: ScreenSaverView {
         path.move(to: CGPoint(x:100, y:100))
         path.line(to: CGPoint(x: 100+50*sin(currentWorldRotation), y: 100+50*cos(currentWorldRotation)))
         NSColor.white.set()
+        path.stroke()
+    }
+    
+    private func drawTries() {
+        let path : NSBezierPath = NSBezierPath()
+        path.move(to: CGPoint(x:0, y:25))
+        path.line(to: CGPoint(x: self.nrTriesPerCycle, y: 25))
+        NSColor.red.set()
         path.stroke()
     }
 }
