@@ -1,13 +1,14 @@
 import ScreenSaver
 import SwiftUI
 
-let stepDuration: UInt8 = 120
+let stepDuration: UInt8 = 20
 let spawnRelax = 1
-let spawnAtOnce = 50
+let spawnAtOnce = 3
 
 let screenSize: CGRect = NSScreen.main!.frame
-let screenWidth: UInt16 = UInt16(screenSize.width)
-let screenHeight: UInt16 = UInt16(screenSize.height)
+let screenWidth: Int = Int(screenSize.width)
+let screenHeight: Int = Int(screenSize.height)
+let minRadius: Double = sqrt(Double(screenWidth*screenWidth) + Double(screenHeight*screenHeight))/2
 let triangleSideLength: CGFloat = 100
 
 let boxFillActivated: Bool = true
@@ -363,7 +364,7 @@ class trianglesView: ScreenSaverView {
     override func draw(_ rect: NSRect) {
         drawBackground(.black)
         //drawGravityVector()
-        drawTries()
+        //drawTries()
         for activeTriangle in triangles {
             activeTriangle.draw()
         }
@@ -492,14 +493,14 @@ class trianglesView: ScreenSaverView {
         let newTriangle = triangle()
         var cellCandidate: CGPoint
         var tries = 0
-        let maxX: Int = 20
-        let maxY: Int = 12
+        let maxX: Int = Int(ceil(2*minRadius/triangleSideLength))
+        let maxY: Int = Int(ceil(Double(maxX)/root3))
         repeat {
             cellCandidate = CGPoint(x: Int.random(in: -maxX..<maxX), y: Int.random(in: -maxY..<maxY))
             tries += 1
             self.nrTriesPerCycle += 1
         }
-        while !cellIsBlocked(cell: cellCandidate) && tries < triangles.count
+        while !cellIsCompletelyFree(cell: cellCandidate) && tries < triangles.count
         if cellIsCompletelyFree(cell: cellCandidate) {
             let hue: Double = Double.random(in: currentHue-hueVariation...currentHue+hueVariation).truncatingRemainder(dividingBy: 1)
             newTriangle.activate(cell: cellCandidate, newColor: NSColor(hue: hue, saturation: Double.random(in: max(sat-satVariation, 0)...min(sat+satVariation, 1)), brightness: Double.random(in: max(brt-brtVariation, 0)...min(brt+brtVariation, 1)), alpha: 0.0))
