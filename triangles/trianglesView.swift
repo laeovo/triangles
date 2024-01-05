@@ -26,10 +26,10 @@ let worldRotationSpeed: Double = 0.001
 //let worldRotationSpeed: Double = 0
 let worldRotationCenter: CGPoint = CGPoint(x: Int(screenWidth/2), y: Int(screenHeight/2))
 
-let nrHues: Double = 1
+let nrHues: Double = 2
 var currentHue: Double = Double.random(in: 0...1)
 let hueVariation: Double = 0.01
-let hueBasicSpeed: Double = 0.0005
+let hueBasicSpeed: Double = 0.0002
 let hueSpeed: Double = hueBasicSpeed + 1/nrHues
 let sat: Double = 0.9
 let satVariation: Double = 0.1
