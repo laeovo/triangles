@@ -1,7 +1,7 @@
 import ScreenSaver
 import SwiftUI
 
-let stepDuration: UInt8 = 20
+let stepDuration: UInt8 = 50
 let spawnRelax = 1
 let spawnAtOnce = 3
 
@@ -9,7 +9,7 @@ let screenSize: CGRect = NSScreen.main!.frame
 let screenWidth: Int = Int(screenSize.width)
 let screenHeight: Int = Int(screenSize.height)
 let minRadius: Double = sqrt(Double(screenWidth*screenWidth) + Double(screenHeight*screenHeight))/2
-let triangleSideLength: CGFloat = 100
+let triangleSideLength: CGFloat = 80
 
 let boxFillActivated: Bool = true
 let fillColor = NSColor(red: 0, green: 0, blue: 0, alpha: 0.5)
@@ -19,14 +19,14 @@ let edgeWidthProportion: CGFloat = 0.12
 let edgeWidth: CGFloat = triangleSideLength * edgeWidthProportion
 
 let rotationActive: Bool = true
-var currentWorldRotation: Double = Double.random(in: 0...2*Double.pi)
+var currentWorldRotation: Double = rotationActive ? Double.random(in: 0...2*Double.pi) : 0
 //var currentWorldRotation: Double = 0
 var currentWorldRotationDegrees: Double = currentWorldRotation / Double.pi * 180
-let worldRotationSpeed: Double = 0.001
+let worldRotationSpeed: Double = rotationActive ? 0.0005 : 0
 //let worldRotationSpeed: Double = 0
 let worldRotationCenter: CGPoint = CGPoint(x: Int(screenWidth/2), y: Int(screenHeight/2))
 
-let nrHues: Double = 2
+let nrHues: Double = 1
 var currentHue: Double = Double.random(in: 0...1)
 let hueVariation: Double = 0.01
 let hueBasicSpeed: Double = 0.0002
@@ -280,8 +280,8 @@ class triangle {
             // movedPhase: [0, 1] --> [0, 1]
 //            self.flippingPhase = phase // linear
 //            self.flippingPhase = 0.5 - 0.5 * cos(Double.pi * phase) // cosine-ish
-//            self.flippingPhase = 0.5 - 0.5 * cbrt(cos(Double.pi * phase)) // accelerated cosine
-            self.flippingPhase = -2*pow(phase, 3) + 3*pow(phase, 2) // cubic
+            self.flippingPhase = 0.5 - 0.5 * cbrt(cos(Double.pi * phase)) // accelerated cosine
+//            self.flippingPhase = -2*pow(phase, 3) + 3*pow(phase, 2) // cubic
 //            self.flippingPhase = phase <= 0.5 ? 2*phase*phase : -phase*phase*2 + 4*phase-1 // pseudo-quadratic
 
             if self.progress == stepDuration {
